@@ -2,12 +2,12 @@
 #include <string.h>
 #include <time.h>
 
-typedef unsigned long long stack_element; // Введите между typedef и stack_element тип данных стека
-#define STK_MODIFIER "%llu"               // Введите после stk модификатор вывода типа данных стека
-#define CANARY_MODIFIER "%llx"
-const   stack_element POISON = 0xBAADF00D;  // Введите редко (желательно никогда не) встречающиеся значение в стеке
+typedef unsigned long long stack_element;  // Введите между typedef и stack_element тип данных стека
+#define STK_MODIFIER "%llu"                // Введите после stk модификатор вывода типа данных стека
+#define POISON_MODIFIER "%llx"
+const   stack_element POISON = 0xBAADF00D; // Введите редко (желательно никогда не) встречающиеся значение в стеке
 
-#define STACK_DEBUG                       // Закомментируйте для отключения DEBUG режима
+#define STACK_DEBUG                        // Закомментируйте для отключения DEBUG режима
 
 #ifdef STACK_DEBUG
     #define ON_DBG(...) __VA_ARGS__

@@ -6,6 +6,13 @@ error_code_e stack_verify(stack_s* const stack) {
         return NULL_STACK;
     }
 
+    ON_DBG(
+    if (is_readble_ptr(stack)) {
+        log_print_error(SEG_FAULT, "stack_verify: ERROR stack ptr cant be read\n");
+        return SEG_FAULT;
+    }
+    )
+
     if (stack->data == NULL) {
         log_print_error(NULL_STACK, "stack_verify: ERROR stack->data is null\n");
         return NULL_STACK;
@@ -29,16 +36,11 @@ error_code_e stack_verify(stack_s* const stack) {
         return CANARY_IS_DEAD;
     }
 
-    unsigned long old_struct_hash = stack->struct_hash;
-    unsigned long old_data_hash   = stack->data_hash; // TODO: _name разобраться
-    stack->       struct_hash     = 0;
-    stack->       data_hash       = 0;
-    unsigned long new_struct_hash = djb2_hash((const unsigned char*)stack, sizeof(*stack));
+    if (is_readble_ptr(stack->data)) {
 
-    if (old_struct_hash != new_struct_hash) {
-        log_print_error(HASH_CHANGED, "stack_verify: ERROR new_hash != old_hash\n");
-        log_dump_stack(stack, "");
-        return HASH_CHANGED;
+        log_print_error(SEG_FAULT, "stack_verify: ERROR stack->data ptr cant be read\n");
+
+        return SEG_FAULT;
     }
 
     if (stack->_real_data[0] != LEFT_CANARY) {
@@ -52,18 +54,6 @@ error_code_e stack_verify(stack_s* const stack) {
         log_dump_stack(stack, "");
         return CANARY_IS_DEAD;
     }
-
-    unsigned long new_data_hash   = djb2_hash((const unsigned char*)stack->_real_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
-    stack->struct_hash = new_struct_hash;
-
-    if (old_data_hash != new_data_hash) {
-        log_print_error(HASH_CHANGED, "stack_verify: ERROR new_hash != old_hash\n");
-        log_dump_stack(stack, "");
-        return HASH_CHANGED;
-    }
-
-    stack->data_hash = new_data_hash;
-
     )
 
     if (stack->capacity == 0) {
@@ -77,6 +67,31 @@ error_code_e stack_verify(stack_s* const stack) {
         log_dump_stack(stack,                 "stack_verify: ERROR size higher capacity\n");
         return SIZE_HIGHER_CAPACITY;
     }
+
+    ON_DBG(
+    unsigned long old_struct_hash = stack->struct_hash;
+    unsigned long old_data_hash   = stack->data_hash; // TODO: _name разобраться
+    stack->       struct_hash     = 0;
+    stack->       data_hash       = 0;
+    unsigned long new_struct_hash = djb2_hash((const unsigned char*)stack, sizeof(*stack));
+
+    if (old_struct_hash != new_struct_hash) {
+        log_print_error(HASH_CHANGED, "stack_verify: ERROR new_hash != old_hash\n");
+        log_dump_stack(stack, "");
+        return HASH_CHANGED;
+    }
+
+    unsigned long new_data_hash   = djb2_hash((const unsigned char*)stack->_real_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
+    stack->struct_hash = new_struct_hash;
+
+    if (old_data_hash != new_data_hash) {
+        log_print_error(HASH_CHANGED, "stack_verify: ERROR new_hash != old_hash\n");
+        log_dump_stack(stack, "");
+        return HASH_CHANGED;
+    }
+
+    stack->data_hash = new_data_hash;
+    )
 
     return SUCCESS;
 }
@@ -143,13 +158,13 @@ error_code_e stack_push(stack_s* const stack, const stack_element value) {
     if (error_code) {
         log_print_error(error_code, "stack_push: ERROR before push during stack_verify\n");
 
-        if (error_code != CANARY_IS_DEAD && error_code != HASH_CHANGED) {
+        if (error_code != SEG_FAULT) {
             log_dump_stack (stack,  "stack_push: ERROR before push during stack_verify\n");
         }
         return error_code;
     }
 
-    log_dump_stack(stack, "stack before push\n");
+    log_print("stack push\n");
 
     if (stack->size == stack->capacity) {
         error_code = stack_recalloc(stack, stack->size * HIGHER_COEF);
@@ -163,7 +178,7 @@ error_code_e stack_push(stack_s* const stack, const stack_element value) {
         if (error_code) {
             log_print_error(error_code, "stack_push: ERROR after recalloc during stack_verify\n");
 
-            if (error_code != CANARY_IS_DEAD && error_code != HASH_CHANGED) {
+            if (error_code != SEG_FAULT) {
                 log_dump_stack (stack,  "stack_push: ERROR after recalloc during stack_verify\n");
             }
             return error_code;
@@ -184,14 +199,13 @@ error_code_e stack_push(stack_s* const stack, const stack_element value) {
     if (error_code) {
         log_print_error(error_code, "stack_push: ERROR after push during stack_verify\n");
 
-        if (error_code != CANARY_IS_DEAD && error_code != HASH_CHANGED) {
+        if (error_code != SEG_FAULT) {
             log_dump_stack (stack,  "stack_push: ERROR after push during stack_verify\n");
         }
 
         return error_code;
     }
 
-    log_dump_stack(stack, "stack after push\n");
 
     return SUCCESS;
 }
@@ -204,7 +218,7 @@ error_code_e stack_pop(stack_s* const stack, stack_element* const value) {
     if (error_code) {
         log_print_error(error_code, "stack_pop: ERROR before pop during stack_verify\n");
 
-        if (error_code != CANARY_IS_DEAD && error_code != HASH_CHANGED) {
+        if (error_code != SEG_FAULT) {
             log_dump_stack (stack,  "stack_pop: ERROR before pop during stack_verify\n");
         }
         return error_code;
@@ -222,7 +236,7 @@ error_code_e stack_pop(stack_s* const stack, stack_element* const value) {
         return NULL_PARAM;
     }
 
-    log_dump_stack(stack, "stack before pop\n");
+    log_print("stack pop\n");
 
     if (stack->size <= stack->capacity / LOWER_COEF && stack->capacity / LOWER_COEF ) {
         error_code = stack_recalloc(stack, stack->capacity / LOWER_COEF);
@@ -236,7 +250,7 @@ error_code_e stack_pop(stack_s* const stack, stack_element* const value) {
         if (error_code) {
             log_print_error(error_code, "stack_pop: ERROR after recalloc during stack_verify\n");
 
-            if (error_code != CANARY_IS_DEAD && error_code != HASH_CHANGED) {
+            if (error_code != SEG_FAULT) {
                 log_dump_stack (stack,  "stack_pop: ERROR after recalloc during stack_verify\n");
             }
             return error_code;
@@ -259,13 +273,11 @@ error_code_e stack_pop(stack_s* const stack, stack_element* const value) {
     if (error_code) {
         log_print_error(error_code, "stack_pop: ERROR after pop during stack_verify\n");
 
-        if (error_code != CANARY_IS_DEAD && error_code != HASH_CHANGED) {
+        if (error_code != SEG_FAULT) {
             log_dump_stack (stack,  "stack_pop: ERROR after pop during stack_verify\n");
         }
         return error_code;
     }
-
-    log_dump_stack(stack, "stack after pop\n");
 
     return SUCCESS;
 }
@@ -454,7 +466,7 @@ void log_dump_stack(const stack_s* const stack, const char* const reason) {
     fprintf(log_file,"\t_real_data[%p]\n", stack->_real_data);
     fprintf(log_file, "\t{\n");
 
-    fprintf(log_file, "\t\t [%zu] = " CANARY_MODIFIER " (CANARY!!!)\n", (size_t)0, stack->_real_data[0]); // ???(size_t)0 почему компилятор думает что 0 это int ???
+    fprintf(log_file, "\t\t [%zu] = " POISON_MODIFIER " (CANARY!!!)\n", (size_t)0, stack->_real_data[0]); // ???(size_t)0 почему компилятор думает что 0 это int ???
 
     for (size_t ind = 0; ind < stack->size; ind++) {
         ASSERT_FOR_ARR(ind, stack->size);
@@ -463,10 +475,10 @@ void log_dump_stack(const stack_s* const stack, const char* const reason) {
 
     for (size_t ind = stack->size; ind < stack->capacity; ind++) {
         ASSERT_FOR_ARR(ind, stack->capacity);
-        fprintf(log_file ,"\t\t [%zu] = " STK_MODIFIER " (POISON!!!) \n", ind + 1, stack->data[ind]);
+        fprintf(log_file ,"\t\t [%zu] = " POISON_MODIFIER " (POISON!!!) \n", ind + 1, stack->data[ind]);
     }
 
-    fprintf(log_file, "\t\t [%zu] = " CANARY_MODIFIER " (CANARY!!!)\n", stack->capacity + 1, stack->data[stack->capacity]);
+    fprintf(log_file, "\t\t [%zu] = " POISON_MODIFIER " (CANARY!!!)\n", stack->capacity + 1, stack->data[stack->capacity]);
 
     fprintf(log_file ,"\t}\n");
 
@@ -480,7 +492,7 @@ void log_dump_stack(const stack_s* const stack, const char* const reason) {
 
     for (size_t ind = stack->size; ind < stack->capacity; ind++) {
         ASSERT_FOR_ARR(ind, stack->capacity);
-        fprintf(log_file ,"\t\t [%zu] = " STK_MODIFIER " (POISON!!!) \n", ind, stack->data[ind]);
+        fprintf(log_file ,"\t\t [%zu] = " POISON_MODIFIER " (POISON!!!) \n", ind, stack->data[ind]);
     }
 
     fprintf(log_file ,"\t}\n");

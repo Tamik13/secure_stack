@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 #include <time.h>
 
 #define PRINT_ERROR(error)    \
@@ -56,15 +57,15 @@
 #define COLOR_TEXT_START(COLOR) "\033[" COLOR "m"
 #define COLOR_TEXT_END          "\033[0m"
 
-#define $int(num)     $ANCHOR fprintf(stderr, COLOR_TEXT(#num, VIOLET)    " = %d\n\n",       num)
-#define $double(num)  $ANCHOR fprintf(stderr, COLOR_TEXT(#num, VIOLET)    " = %lg\n\n",      num)
-#define $luint(num)   $ANCHOR fprintf(stderr, COLOR_TEXT(#num, VIOLET)    " = %lu\n\n",      num)
-#define $llint(num)   $ANCHOR fprintf(stderr, COLOR_TEXT(#num, VIOLET)    " = %lld\n\n",     num)
-#define $uint(num)    $ANCHOR fprintf(stderr, COLOR_TEXT(#num, VIOLET)    " = %u\n\n",       num)
+#define $int(num)     $ANCHOR fprintf(stderr, COLOR_TEXT(#num,    VIOLET) " = %d\n\n",       num)
+#define $double(num)  $ANCHOR fprintf(stderr, COLOR_TEXT(#num,    VIOLET) " = %lg\n\n",      num)
+#define $luint(num)   $ANCHOR fprintf(stderr, COLOR_TEXT(#num,    VIOLET) " = %lu\n\n",      num)
+#define $llint(num)   $ANCHOR fprintf(stderr, COLOR_TEXT(#num,    VIOLET) " = %lld\n\n",     num)
+#define $uint(num)    $ANCHOR fprintf(stderr, COLOR_TEXT(#num,    VIOLET) " = %u\n\n",       num)
 #define $char(symbol) $ANCHOR fprintf(stderr, COLOR_TEXT(#symbol, VIOLET) " = <%c>, %d\n\n", symbol, symbol)
-#define $string(str)  $ANCHOR fprintf(stderr, COLOR_TEXT(#str, VIOLET)    " = <%s>\n\n",     str)
-#define $size_t(num)  $ANCHOR fprintf(stderr, COLOR_TEXT(#num, VIOLET)    " = %zu\n\n",      num)
-#define $ptr(ptr)     $ANCHOR fprintf(stderr, COLOR_TEXT(#ptr, VIOLET)    " = %p\n\n",       ptr)
+#define $string(str)  $ANCHOR fprintf(stderr, COLOR_TEXT(#str,    VIOLET) " = <%s>\n\n",     str)
+#define $size_t(num)  $ANCHOR fprintf(stderr, COLOR_TEXT(#num,    VIOLET) " = %zu\n\n",      num)
+#define $ptr(ptr)     $ANCHOR fprintf(stderr, COLOR_TEXT(#ptr,    VIOLET) " = %p\n\n",       ptr)
 
 enum error_code_e {
     SUCCESS              = 0,
@@ -80,6 +81,8 @@ enum error_code_e {
     CANARY_IS_DEAD       = 10,
     REINITIALIZATION     = 11,
     HASH_CHANGED         = 12,
+    SEG_FAULT            = 13,
+    UNEXPECTED_ERROR     = 14,
     INIT_VALUE           = -1
 };
 
@@ -97,3 +100,5 @@ void $print_int_arr   (const int         int_array[], const size_t size);
 void $print_intptr_arr(const int* const  int_array[], const size_t size);
 
 const char* my_str_error(const error_code_e error_code);
+
+error_code_e is_readble_ptr(void* ptr);

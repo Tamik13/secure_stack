@@ -88,10 +88,13 @@ int main() {
 //         return error_code;
 //     }
 
-    stack.data[1] = 148;
 
-    error_code = stack_push(&stack, 2);
+
+    // stack.data = (stack_element*)123;
+
+    error_code = stack_push((stack_s*)1235, 2);
     if (error_code) {
+
         PRINT_ERROR(error_code)
         return error_code;
     }
