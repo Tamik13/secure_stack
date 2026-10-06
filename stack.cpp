@@ -18,19 +18,19 @@ error_code_e stack_verify(stack_s* const stack) {
         return NULL_STACK;
     }
 
-    if (stack->_real_data == NULL) {
-        log_print_error(NULL_STACK, "stack_verify: ERROR stack->_real_data is null\n");
+    ON_DBG(
+    if (stack->canary_data == NULL) {
+        log_print_error(NULL_STACK, "stack_verify: ERROR stack->canary_data is null\n");
         return NULL_STACK;
     }
 
-    ON_DBG(
-    if (stack->_left_canary != LEFT_CANARY) {
+    if (stack->left_canary != LEFT_CANARY) {
         log_print_error(CANARY_IS_DEAD, "stack_verify: ERROR first canary in struct IS DEAD(((\n");
         log_dump_stack(stack, "");
         return CANARY_IS_DEAD;
     }
 
-    if (stack->_right_canary != RIGHT_CANARY) {
+    if (stack->right_canary != RIGHT_CANARY) {
         log_print_error(CANARY_IS_DEAD, "stack_verify: ERROR second canary in struct IS DEAD(((\n");
         log_dump_stack(stack, "");
         return CANARY_IS_DEAD;
@@ -43,7 +43,7 @@ error_code_e stack_verify(stack_s* const stack) {
         return SEG_FAULT;
     }
 
-    if (stack->_real_data[0] != LEFT_CANARY) {
+    if (stack->canary_data[0] != LEFT_CANARY) {
         log_print_error(CANARY_IS_DEAD, "stack_verify: ERROR first canary in data IS DEAD(((\n");
         log_dump_stack(stack, "");
         return CANARY_IS_DEAD;
@@ -69,8 +69,8 @@ error_code_e stack_verify(stack_s* const stack) {
     }
 
     ON_DBG(
-    unsigned long old_struct_hash = stack->struct_hash;
-    unsigned long old_data_hash   = stack->data_hash; // TODO: _name разобраться
+    unsigned long old_struct_hash = stack->struct_hash; // TODO: define
+    unsigned long old_data_hash   = stack->data_hash;
     stack->       struct_hash     = 0;
     stack->       data_hash       = 0;
     unsigned long new_struct_hash = djb2_hash((const unsigned char*)stack, sizeof(*stack));
@@ -81,7 +81,7 @@ error_code_e stack_verify(stack_s* const stack) {
         return HASH_CHANGED;
     }
 
-    unsigned long new_data_hash   = djb2_hash((const unsigned char*)stack->_real_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
+    unsigned long new_data_hash   = djb2_hash((const unsigned char*)stack->canary_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
     stack->struct_hash = new_struct_hash;
 
     if (old_data_hash != new_data_hash) {
@@ -108,23 +108,23 @@ error_code_e stack_init(stack_s* const stack, const size_t capacity ON_DBG(, con
         return REINITIALIZATION;
     }
 
-    stack->_real_data = (stack_element*)calloc(capacity + COUNT_CANARY * CANARY_SIZE, sizeof(stack_element));
+    stack->data = (stack_element*)calloc(capacity ON_DBG(+ COUNT_LEFT_CANARY * CANARY_SIZE), sizeof(stack_element));
 
-    if (stack->_real_data == NULL) {
+    if (stack->data == NULL) {
         log_print_error(ALLOCATION_ERROR, "stack_init: ERROR during allocation\n");
         return ALLOCATION_ERROR;
     }
 
-
-    stack->data     = stack->_real_data + COUNT_LEFT_CANARY * CANARY_SIZE;
     stack->capacity = capacity;
     stack->size     = 0;
 
     ON_DBG(
-        stack->name     = name;
-        stack->file     = file;
-        stack->function = function;
-        stack->line     = line;
+        stack->canary_data =  stack->data;
+        stack->data        += COUNT_LEFT_CANARY * CANARY_SIZE;
+        stack->name        =  name;
+        stack->file        =  file;
+        stack->function    =  function;
+        stack->line        =  line;
     )
 
     for (size_t ind = 0; ind < stack->capacity; ind++) {
@@ -132,18 +132,18 @@ error_code_e stack_init(stack_s* const stack, const size_t capacity ON_DBG(, con
         stack->data[ind] = POISON;
     }
 
-    stack->_real_data[0]         = LEFT_CANARY;
+    ON_DBG(
+    stack->canary_data[0]        = LEFT_CANARY;
     stack->data[stack->capacity] = RIGHT_CANARY;
 
-    ON_DBG(
-    stack->_left_canary          = LEFT_CANARY;
+    stack->left_canary           = LEFT_CANARY;
     stack->data[stack->capacity] = RIGHT_CANARY;
 
     stack->struct_hash = 0;
     stack->struct_hash = djb2_hash((const unsigned char*)stack, sizeof(*stack));
 
     stack->data_hash = 0;
-    stack->data_hash = djb2_hash((const unsigned char*)stack->_real_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
+    stack->data_hash = djb2_hash((const unsigned char*)stack->canary_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
 
     )
 
@@ -192,7 +192,7 @@ error_code_e stack_push(stack_s* const stack, const stack_element value) {
     stack->data_hash   = 0;
 
     stack->struct_hash = djb2_hash((const unsigned char*)stack, sizeof(*stack));
-    stack->data_hash   = djb2_hash((const unsigned char*)stack->_real_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
+    stack->data_hash   = djb2_hash((const unsigned char*)stack->canary_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
     )
 
     error_code = stack_verify(stack);
@@ -266,7 +266,7 @@ error_code_e stack_pop(stack_s* const stack, stack_element* const value) {
     stack->data_hash   = 0;
 
     stack->struct_hash = djb2_hash((const unsigned char*)stack, sizeof(*stack));
-    stack->data_hash   = djb2_hash((const unsigned char*)stack->_real_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
+    stack->data_hash   = djb2_hash((const unsigned char*)stack->canary_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
     )
 
     error_code = stack_verify(stack);
@@ -291,13 +291,14 @@ error_code_e stack_destroy(stack_s* const stack) {
         return error_code;
     }
 
-    free(stack->_real_data);
-    stack->_real_data = NULL;
+    free(stack->data ON_DBG( - COUNT_LEFT_CANARY * CANARY_SIZE));
+
     stack->data       = NULL;
     stack->capacity   = 0;
     stack->size       = 0;
 
     ON_DBG(
+        stack->canary_data = NULL;
         stack->struct_hash = 0;
         stack->data_hash   = 0;
         stack->name        = NULL;
@@ -319,17 +320,23 @@ error_code_e stack_recalloc(stack_s* const stack, const size_t new_capacity) {
         return error_code;
     }
 
-    stack_element* new_real_data = (stack_element*)realloc((void*)stack->_real_data, (new_capacity + COUNT_CANARY) * sizeof(stack_element));
+    stack_element* new_canary_data = (stack_element*)realloc((void*)(stack->data ON_DBG( - COUNT_LEFT_CANARY * CANARY_SIZE)), (new_capacity ON_DBG(+ COUNT_CANARY)) * sizeof(stack_element));
 
-    if (new_real_data == NULL) {
+    if (new_canary_data == NULL) {
         log_print_error(error_code, "stack_recalloc: ERROR during recalloc\n");
         return ALLOCATION_ERROR;
     }
 
-    stack->_real_data         = new_real_data;
-    stack->data               = stack->_real_data + COUNT_LEFT_CANARY;
-    stack->_real_data[0]      = LEFT_CANARY;
-    stack->data[new_capacity] = RIGHT_CANARY;
+    stack->data = new_canary_data;
+
+    ON_DBG(
+        stack->canary_data        = new_canary_data;
+        stack->data               += COUNT_LEFT_CANARY * CANARY_SIZE;
+
+        $ANCHOR
+        stack->canary_data[0]     = LEFT_CANARY;
+        stack->data[new_capacity] = RIGHT_CANARY;
+    )
 
     for (size_t ind = stack->size; ind < new_capacity; ind++) {
         ASSERT_FOR_ARR(ind, new_capacity);
@@ -343,7 +350,7 @@ error_code_e stack_recalloc(stack_s* const stack, const size_t new_capacity) {
     stack->data_hash   = 0;
 
     stack->struct_hash = djb2_hash((const unsigned char*)stack, sizeof(*stack));
-    stack->data_hash   = djb2_hash((const unsigned char*)stack->_real_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
+    stack->data_hash   = djb2_hash((const unsigned char*)stack->canary_data, sizeof(stack_element) * (stack->capacity + COUNT_CANARY));
     )
 
     error_code = stack_verify(stack);
@@ -401,11 +408,11 @@ bool is_stack_init(const stack_s* const stack) {
     if (stack->name != NULL) {
         return true;
     }
-    )
 
-    if (stack->_real_data != NULL) {
+    if (stack->canary_data != NULL) {
         return true;
     }
+    )
 
     if (stack->data != NULL) {
         return true;
@@ -461,12 +468,11 @@ void log_dump_stack(const stack_s* const stack, const char* const reason) {
 
     ON_DBG(
     fprintf(log_file, "\thash     = %lu\n", stack->struct_hash);
-    )
 
-    fprintf(log_file,"\t_real_data[%p]\n", stack->_real_data);
+    fprintf(log_file,"\tcanary_data[%p]\n", stack->canary_data);
     fprintf(log_file, "\t{\n");
 
-    fprintf(log_file, "\t\t [%zu] = " POISON_MODIFIER " (CANARY!!!)\n", (size_t)0, stack->_real_data[0]); // ???(size_t)0 почему компилятор думает что 0 это int ???
+    fprintf(log_file, "\t\t [%zu] = " POISON_MODIFIER " (CANARY!!!)\n", (size_t)0, stack->canary_data[0]); // ???(size_t)0 почему компилятор думает что 0 это int ???
 
     for (size_t ind = 0; ind < stack->size; ind++) {
         ASSERT_FOR_ARR(ind, stack->size);
@@ -479,10 +485,10 @@ void log_dump_stack(const stack_s* const stack, const char* const reason) {
     }
 
     fprintf(log_file, "\t\t [%zu] = " POISON_MODIFIER " (CANARY!!!)\n", stack->capacity + 1, stack->data[stack->capacity]);
-
     fprintf(log_file ,"\t}\n");
+    )
 
-    fprintf(log_file,"\tdata[%p]\n", stack->data);
+    fprintf(log_file, "\tdata[%p]\n", stack->data);
     fprintf(log_file, "\t{\n");
 
     for (size_t ind = 0; ind < stack->size; ind++) {

@@ -7,7 +7,11 @@ typedef unsigned long long stack_element;  // Введите между typedef 
 #define POISON_MODIFIER "%llx"
 const   stack_element POISON = 0xBAADF00D; // Введите редко (желательно никогда не) встречающиеся значение в стеке
 
-#define STACK_DEBUG                        // Закомментируйте для отключения DEBUG режима
+
+
+// #define STACK_DEBUG                        // Закомментируйте для отключения DEBUG режима
+
+
 
 #ifdef STACK_DEBUG
     #define ON_DBG(...) __VA_ARGS__
@@ -26,24 +30,26 @@ const stack_element RIGHT_CANARY      = (stack_element)0xBADCAFE;
 
 #define TO_STR(val) #val
 
+#define STACK_INIT(stack, capacity) stack_init(&stack, capacity ON_DBG(#stack, __FILE__, __FUNCTION__, __LINE__));
+
 struct stack_s {
-    ON_DBG(stack_element _left_canary = LEFT_CANARY;)
+    ON_DBG(stack_element left_canary = LEFT_CANARY;)
 
     ON_DBG(
-        const char*   name        = NULL;
-        const char*   file        = NULL;
-        const char*   function    = NULL;
-        size_t        line        = 0;
-        unsigned long struct_hash = 0;
-        unsigned long data_hash   = 0;
+        const char*    name        = NULL;
+        const char*    file        = NULL;
+        const char*    function    = NULL;
+        size_t         line        = 0;
+        unsigned long  struct_hash = 0;
+        unsigned long  data_hash   = 0;
+        stack_element* canary_data = NULL;
     )
 
-    stack_element* _real_data = NULL; //TODO убрать из release
     stack_element* data       = NULL;
     size_t         size       = 0;
     size_t         capacity   = 0;
 
-    ON_DBG(stack_element _right_canary = RIGHT_CANARY;)
+    ON_DBG(stack_element right_canary = RIGHT_CANARY;)
 };
 
 error_code_e stack_init    (stack_s* const stack, const size_t capacity ON_DBG(, const char* const name, const char* const file, const char* const function, const size_t line));

@@ -1,21 +1,64 @@
 
-FUNCTION: log_print DATE:Mon Oct  5 13:17:36 2026
+FUNCTION: log_dump_stack DATE:Tue Oct  6 15:17:52 2026
+ REASON: {
+	size     = 0
+	capacity = 1
+	data[0x132605e30]
+	{
+		 [0] = baadf00d (POISON!!!) 
+	}
+}
+
+FUNCTION: log_print DATE:Tue Oct  6 15:17:52 2026
 stack push
 
-FUNCTION: log_print DATE:Mon Oct  5 13:17:36 2026
+FUNCTION: log_dump_stack DATE:Tue Oct  6 15:17:52 2026
+ REASON: {
+	size     = 1
+	capacity = 1
+	data[0x132605e30]
+	{
+		*[0] = 10
+	}
+}
+
+FUNCTION: log_print DATE:Tue Oct  6 15:17:52 2026
 stack push
 
-FUNCTION: log_print DATE:Mon Oct  5 13:17:36 2026
+FUNCTION: log_dump_stack DATE:Tue Oct  6 15:17:52 2026
+ REASON: {
+	size     = 2
+	capacity = 2
+	data[0x132605e30]
+	{
+		*[0] = 10
+		*[1] = 20
+	}
+}
+
+FUNCTION: log_print DATE:Tue Oct  6 15:17:52 2026
 stack push
 
-FUNCTION: log_print_error DATE:Mon Oct  5 13:17:36 2026
-is_readble: ERROR pointer cant be read
-ERROR error_code: SEG FAULT: 13 errno_code: Bad address
+FUNCTION: log_print DATE:Tue Oct  6 15:17:52 2026
+stack pop
 
-FUNCTION: log_print_error DATE:Mon Oct  5 13:17:36 2026
-stack_verify: ERROR stack ptr cant be read
-ERROR error_code: SEG FAULT: 13 errno_code: Bad address
+FUNCTION: log_print DATE:Tue Oct  6 15:17:52 2026
+stack pop
 
-FUNCTION: log_print_error DATE:Mon Oct  5 13:17:36 2026
-stack_push: ERROR before push during stack_verify
-ERROR error_code: SEG FAULT: 13 errno_code: Bad address
+FUNCTION: log_print DATE:Tue Oct  6 15:17:52 2026
+stack pop
+
+FUNCTION: log_print_error DATE:Tue Oct  6 15:17:52 2026
+stack_pop: ERROR before pop try pop void stack
+ERROR error_code: POP VOID STACK: 4 errno_code: Undefined error: 0
+
+FUNCTION: log_dump_stack DATE:Tue Oct  6 15:17:52 2026
+ REASON: stack_pop: ERROR before pop try pop void stack
+{
+	size     = 0
+	capacity = 1
+	data[0x1327045c0]
+	{
+		 [0] = baadf00d (POISON!!!) 
+	}
+}

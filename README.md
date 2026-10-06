@@ -12,6 +12,7 @@
     * [Установка](#Установка)
     * [Компиляция](#Компиляция)
     * [Запуск](#Запуск)
+* [Использование](#Использование)
 * [Фишки](#Фишки)
 * [Благодарности](#Благодарности)
 
@@ -45,6 +46,69 @@ compile
  ./stack
 ```
 
+---
+
+# Использование
+
+У структуры ``` stack_s``` есть следующие функции:
+
+```cpp
+STACK_INIT(stack, capacity)
+```
+
+Макрос, вызывающий функцию инициализации стека.
+
+---
+
+```cpp
+error_code_e stack_push(stack_s* const stack, const stack_element value);
+```
+
+Функция добавления элемента в стек
+
+---
+
+```cpp
+error_code_e stack_pop     (stack_s* const stack, stack_element* const value);
+```
+
+Функция извлечения последнего элемента из стека
+
+---
+
+```cpp
+error_code_e stack_destroy (stack_s* const stack);
+```
+
+Функция уничтожения стека
+
+---
+
+```cpp
+error_code_e stack_recalloc(stack_s* const stack, const size_t new_capacity);
+```
+
+Функция изменяющая capacity стека
+
+---
+
+```cpp
+bool is_stack_init       (const stack_s* const stack);
+```
+
+Функция, проверяющая инициализирован ли стек
+
+---
+
+```cpp
+void log_dump_stack(const stack_s* const stack, const char* const reason);
+```
+
+Функция, выводящая максимально подробную информацию про стек в log файл
+
+
+---
+
 # Фишки
 
 * Канареечная защита
@@ -52,6 +116,8 @@ compile
 * В функции stack_verify множество проверок
 * stack не ложит программу а просто возвращает код ошибки
 * Подробный вывод в log файл
+* Проверка корректности указателей
+* Debug и release режимы компиляции
 
 # Благодарности
 

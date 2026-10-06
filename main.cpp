@@ -11,11 +11,13 @@ int main() {
     stack_s      stack      = {};
     size_t       size       = 1;
 
-    error_code = stack_init(&stack, size ON_DBG(, "stack", __FILE__, __FUNCTION__, __LINE__));
+    error_code = STACK_INIT(stack, size ON_DBG(, "stack", __FILE__, __FUNCTION__, __LINE__));
     if (error_code) {
         PRINT_ERROR(error_code)
         return error_code;
     }
+
+    log_dump_stack(&stack, "");
 
     error_code = stack_push(&stack, 10);
     if (error_code) {
@@ -23,11 +25,15 @@ int main() {
         return error_code;
     }
 
+    log_dump_stack(&stack, "");
+
     error_code = stack_push(&stack, 20);
     if (error_code) {
         PRINT_ERROR(error_code)
         return error_code;
     }
+
+    log_dump_stack(&stack, "");
 
     error_code = stack_push(&stack, 30);
     if (error_code) {
@@ -37,31 +43,31 @@ int main() {
 
 
 
-//     stack_element pop_element = 0;
-//
-//     error_code = stack_pop(&stack, &pop_element);
-//     if (error_code != SUCCESS) {
-//         PRINT_ERROR(error_code)
-//         return error_code;
-//     }
-//
-//     error_code = stack_pop(&stack, &pop_element);
-//     if (error_code != SUCCESS) {
-//         PRINT_ERROR(error_code)
-//         return error_code;
-//     }
-//
-//     error_code = stack_pop(&stack, &pop_element);
-//     if (error_code != SUCCESS) {
-//         PRINT_ERROR(error_code)
-//         return error_code;
-//     }
-//
-//     error_code = stack_pop(&stack, &pop_element);
-//     if (error_code != SUCCESS) {
-//         PRINT_ERROR(error_code)
-//         return error_code;
-//     }
+    stack_element pop_element = 0;
+
+    error_code = stack_pop(&stack, &pop_element);
+    if (error_code != SUCCESS) {
+        PRINT_ERROR(error_code)
+        return error_code;
+    }
+
+    error_code = stack_pop(&stack, &pop_element);
+    if (error_code != SUCCESS) {
+        PRINT_ERROR(error_code)
+        return error_code;
+    }
+
+    error_code = stack_pop(&stack, &pop_element);
+    if (error_code != SUCCESS) {
+        PRINT_ERROR(error_code)
+        return error_code;
+    }
+
+    error_code = stack_pop(&stack, &pop_element);
+    if (error_code != SUCCESS) {
+        PRINT_ERROR(error_code)
+        return error_code;
+    }
 
 //     very_smart_function(&stack);
 //
